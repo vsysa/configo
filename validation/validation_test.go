@@ -324,6 +324,92 @@ func TestIsValidCronExpression(t *testing.T) {
 	}
 }
 
+// TestIsValidRobfigCronExpression тестирует функцию IsValidRobfigCronExpression.
+func TestIsValidRobfigCronExpression(t *testing.T) {
+	tests := []struct {
+		name          string
+		fieldName     string
+		expression    string
+		expectedValid bool
+		expectedErr   string
+	}{
+		{
+			name:          "Valid @every expression",
+			fieldName:     "SyncJob",
+			expression:    "@every 2m",
+			expectedValid: true,
+			expectedErr:   "",
+		},
+		{
+			name:          "Valid @hourly expression",
+			fieldName:     "HourlyTask",
+			expression:    "@hourly",
+			expectedValid: true,
+			expectedErr:   "",
+		},
+		{
+			name:          "Valid standard cron expression",
+			fieldName:     "DailyJob",
+			expression:    "0 0 * * *",
+			expectedValid: true,
+			expectedErr:   "",
+		},
+		{
+			name:          "Valid standard cron with wildcard",
+			fieldName:     "WildcardJob",
+			expression:    "* * * * *",
+			expectedValid: true,
+			expectedErr:   "",
+		},
+		{
+			name:          "Invalid descriptor format",
+			fieldName:     "BrokenJob",
+			expression:    "@evry 5m",
+			expectedValid: false,
+			expectedErr:   "BrokenJob cron выражение '@evry 5m' недействительно:",
+		},
+		{
+			name:          "Invalid cron format in descriptor",
+			fieldName:     "BadIntervalJob",
+			expression:    "@every wrong",
+			expectedValid: false,
+			expectedErr:   "BadIntervalJob cron выражение '@every wrong' недействительно:",
+		},
+		{
+			name:          "Invalid standard cron expression",
+			fieldName:     "BadCronJob",
+			expression:    "0 0 0 *",
+			expectedValid: false,
+			expectedErr:   "BadCronJob cron выражение '0 0 0 *' недействительно:",
+		},
+		{
+			name:          "Totally invalid string",
+			fieldName:     "GarbageJob",
+			expression:    "not a cron",
+			expectedValid: false,
+			expectedErr:   "GarbageJob cron выражение 'not a cron' недействительно:",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			valid, err := IsValidRobfigCronExpression(test.expression, test.fieldName)
+			if valid != test.expectedValid {
+				t.Errorf("expected validity %v, got %v", test.expectedValid, valid)
+			}
+			if err != nil && test.expectedErr == "" {
+				t.Errorf("expected no error, got error %v", err)
+			}
+			if err == nil && test.expectedErr != "" {
+				t.Errorf("expected error %s, got no error", test.expectedErr)
+			}
+			if err != nil && test.expectedErr != "" && !startsWith(err.Error(), test.expectedErr) {
+				t.Errorf("expected error message to start with '%s', got '%s'", test.expectedErr, err.Error())
+			}
+		})
+	}
+}
+
 // startsWith checks if a string starts with a given prefix.
 func startsWith(s, prefix string) bool {
 	return len(s) >= len(prefix) && s[:len(prefix)] == prefix
